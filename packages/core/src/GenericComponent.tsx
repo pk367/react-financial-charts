@@ -359,24 +359,37 @@ export class GenericComponent extends React.Component<GenericComponentProps, Gen
         }
     }
 
-    public UNSAFE_componentWillReceiveProps(nextProps: GenericComponentProps, nextContext: any) {
-        const { xScale, plotData, chartConfig, getMutableState } = nextContext;
+public componentDidUpdate(prevProps: GenericComponentProps, prevState: GenericComponentState) {
+    const { canvasDraw, selected, interactiveCursorClass } = this.props;
 
-        this.moreProps = {
-            ...this.moreProps,
-            ...getMutableState(),
-            /*
-			^ this is so
-			mouseXY, currentCharts, currentItem are available to
-			newly created components like MouseHoverText which
-			is created right after a new interactive object is drawn
-			*/
-            xScale,
-            plotData,
-            chartConfig,
-        };
+    // Handle changes in selected prop
+    if (prevProps.selected !== selected) {
+        const { setCursorClass } = this.context;
+        if (selected && this.moreProps.hovering) {
+            this.iSetTheCursorClass = true;
+            setCursorClass(interactiveCursorClass);
+        } else {
+            this.iSetTheCursorClass = false;
+            setCursorClass(null);
+        }
     }
 
+    // Check if canvasDraw prop changed
+    if (canvasDraw !== undefined && !this.evaluationInProgress) {
+        this.updateMoreProps(this.moreProps);
+        this.drawOnCanvas();
+    }
+
+    // Handle changes in other props
+    const { xScale, plotData, chartConfig, getMutableState } = this.context;
+    this.moreProps = {
+        ...this.moreProps,
+        ...getMutableState(),
+        xScale,
+        plotData,
+        chartConfig,
+    };
+}
     public getMoreProps() {
         const { xScale, plotData, chartConfigs, morePropsDecorator, xAccessor, displayXAccessor, width, height } =
             this.context;
